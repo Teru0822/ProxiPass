@@ -145,6 +145,7 @@ function createTray() {
 setInterval(checkUpdates, 60000);
 
 let lastUpdateCheck = 0;
+let lastUpdateNotifiedVersion = null; // 通知済みのバージョンを記録
 
 async function checkUpdates() {
     if (!mainWindow) return;
@@ -176,6 +177,7 @@ async function checkUpdates() {
         res.on('end', () => {
             try {
                 const json = JSON.parse(data);
+                if (!json.content) return; // コンテンツがない場合
                 const content = Buffer.from(json.content, 'base64').toString();
                 const remotePkg = JSON.parse(content);
                 const remoteVersion = remotePkg.version;
@@ -185,12 +187,15 @@ async function checkUpdates() {
                 const localPkg = JSON.parse(fs.readFileSync(currentPkgPath, 'utf8'));
                 const currentVersion = localPkg.version;
 
+                console.log(`🔎 Version Check: Local [${currentVersion}] vs Remote [${remoteVersion}]`);
+
                 if (remoteVersion !== currentVersion) {
-                    console.log(`🚀 新バージョン検出! [Local: ${currentVersion}] -> [Remote: ${remoteVersion}]`);
-                    lastUpdateNotified = Date.now();
-                    mainWindow.webContents.send('update-available', remoteVersion);
-                } else {
-                    console.log(`✅ すでに最新版です (v${currentVersion})`);
+                    // まだ通知していない、または通知したバージョンと異なる場合のみ通知
+                    if (lastUpdateNotifiedVersion !== remoteVersion) {
+                        console.log(`🚀 新バージョン検出! 通知を送ります: ${remoteVersion}`);
+                        lastUpdateNotifiedVersion = remoteVersion;
+                        mainWindow.webContents.send('update-available', remoteVersion);
+                    }
                 }
             } catch (e) {
                 console.error('❌ バージョンチェック中にエラー:', e.message);

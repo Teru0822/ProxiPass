@@ -25,14 +25,37 @@ const CONFIG = {
 const Utils = {
     getLocalIP() {
         const interfaces = os.networkInterfaces();
+        let candidate = '127.0.0.1';
         for (const name of Object.keys(interfaces)) {
             for (const iface of interfaces[name]) {
                 if (iface.family === 'IPv4' && !iface.internal) {
-                    return iface.address;
+                    // 優先順位: 192.168 > 10. > 172.16 > その他
+                    if (iface.address.startsWith('192.168.')) return iface.address;
+                    if (iface.address.startsWith('10.')) candidate = iface.address;
+                    if (iface.address.startsWith('172.') && !candidate.startsWith('10.')) candidate = iface.address;
+                    if (candidate === '127.0.0.1') candidate = iface.address;
                 }
             }
         }
-        return '127.0.0.1';
+        return candidate;
+    },
+
+    getNetworkInterfacesInfo() {
+        const info = [];
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+            for (const iface of interfaces[name]) {
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    info.push({
+                        name: name,
+                        address: iface.address,
+                        netmask: iface.netmask,
+                        mac: iface.mac
+                    });
+                }
+            }
+        }
+        return info;
     },
 
     formatBytes(bytes) {
@@ -44,22 +67,26 @@ const Utils = {
     },
 
     playNotificationSound() {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
 
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
 
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
 
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        } catch (e) {
+            console.warn('Audio play failed:', e);
+        }
     },
 
     readFileAsArrayBuffer(file) {
@@ -72,33 +99,37 @@ const Utils = {
     },
 
     getBroadcastAddresses() {
-        const list = [];
+        const list = new Set();
+        // Always try global broadcast
+        list.add('255.255.255.255');
+
         const interfaces = os.networkInterfaces();
         for (const name of Object.keys(interfaces)) {
             for (const iface of interfaces[name]) {
                 if (iface.family === 'IPv4' && !iface.internal) {
-                    // Calculate broadcast address
                     try {
                         let broadcast;
                         if (iface.netmask) {
+                            // Calculate broadcast address using bitwise operations
                             const addr = iface.address.split('.').map(Number);
                             const mask = iface.netmask.split('.').map(Number);
                             broadcast = addr.map((a, i) => (a | (~mask[i] & 255))).join('.');
                         } else {
-                            // Fallback: assume /24 network if netmask is missing
+                            // Fallback: assume /24
                             const parts = iface.address.split('.');
                             parts[3] = '255';
                             broadcast = parts.join('.');
                         }
-                        if (!list.includes(broadcast)) list.push(broadcast);
+                        list.add(broadcast);
                     } catch (e) {
                         console.warn('Calculating broadcast failed:', e);
                     }
                 }
             }
         }
-        console.log('🌐 Broadcast Targets:', list);
-        return list;
+        const finalArray = Array.from(list);
+        console.log('🌐 Broadcast Targets:', finalArray);
+        return finalArray;
     }
 };
 
@@ -672,25 +703,42 @@ class P2PApp {
         const bodyEl = document.getElementById('networkInfoBody');
         if (!bodyEl) return console.error('Network Info Body Element not found');
 
-        let infoHtml = '<div style="margin-bottom:10px;"><b>ステータス:</b> <span style="color:#4ade80">● 動作中 (v' + CONFIG.VERSION + ')</span></div>';
+        let infoHtml = `<div style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee;">
+            <b>📱 アプリステータス:</b> <span style="color:#4ade80; font-weight:bold;">● 動作中 (v${CONFIG.VERSION})</span>
+        </div>`;
 
-        infoHtml += '<div class="info-section"><b>📡 使用中のIPアドレス:</b><br>';
-        infoHtml += `<span style="font-family:monospace; margin-left:10px; font-weight:bold;">${this.myIP}</span></div>`;
+        infoHtml += '<div class="info-section"><b style="color:#2563eb;">📡 アクティブなネットワークインターフェース:</b><br>';
 
-        infoHtml += '<div class="info-section"><b>📢 ブロードキャスト送信先:</b><br>';
+        const interfaces = Utils.getNetworkInterfacesInfo();
+        if (interfaces.length > 0) {
+            interfaces.forEach(iface => {
+                infoHtml += `
+                <div style="background:#f8fafc; padding:8px; margin-top:5px; border-radius:4px; font-size:10px; border:1px solid #e2e8f0;">
+                    <div><b>I/F:</b> ${iface.name}</div>
+                    <div><b>IP:</b> <span style="font-family:monospace; color:#0f172a;">${iface.address}</span></div>
+                    <div><b>Mask:</b> <span style="font-family:monospace; color:#64748b;">${iface.netmask}</span></div>
+                    <div><b>MAC:</b> <span style="font-family:monospace; color:#64748b;">${iface.mac}</span></div>
+                </div>`;
+            });
+        } else {
+            infoHtml += '<div style="color:orange; margin-top:5px;">※ 有効なIPv4インターフェースが見つかりません</div>';
+        }
+        infoHtml += '</div>';
+
+        infoHtml += '<div class="info-section" style="margin-top:15px;"><b>📢 ブロードキャスト送信ターゲット:</b><br>';
         const broadcasts = Utils.getBroadcastAddresses();
         if (broadcasts.length > 0) {
             broadcasts.forEach(addr => {
-                infoHtml += `<span style="font-family:monospace; margin-left:10px;">- ${addr}</span><br>`;
+                infoHtml += `<span style="font-family:monospace; margin-left:10px; display:block; color:#059669;">Target: ${addr}</span>`;
             });
-            infoHtml += `<span style="font-family:monospace; margin-left:10px;">- 255.255.255.255 (Global)</span></div>`;
         } else {
-            infoHtml += '<span style="color:orange; margin-left:10px;">※ ローカルIPが見つかりません</span></div>';
+            infoHtml += '<span style="color:orange; margin-left:10px;">- なし</span>';
         }
+        infoHtml += '</div>';
 
-        infoHtml += '<div class="info-section"><b>🔌 ポート状態:</b><br>';
-        infoHtml += `<span style="font-family:monospace; margin-left:10px;">UDP (検出): ${CONFIG.PORTS.BROADCAST} [Open]</span><br>`;
-        infoHtml += `<span style="font-family:monospace; margin-left:10px;">TCP (転送): ${CONFIG.PORTS.TRANSFER} [Listening]</span></div>`;
+        infoHtml += '<div class="info-section" style="margin-top:15px; padding-top:10px; border-top:1px solid #eee;"><b>🔌 ポート状態:</b><br>';
+        infoHtml += `<span style="font-family:monospace; margin-left:10px;">UDP (Discovery): ${CONFIG.PORTS.BROADCAST}</span><br>`;
+        infoHtml += `<span style="font-family:monospace; margin-left:10px;">TCP (Transfer) : ${CONFIG.PORTS.TRANSFER}</span></div>`;
 
         bodyEl.innerHTML = infoHtml;
         this.ui.toggleModal('networkInfoModal', true);
