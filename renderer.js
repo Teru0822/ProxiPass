@@ -663,19 +663,15 @@ class P2PApp {
             this.performUpdate(version);
         });
 
-        // フォーカス通知を受信
-        ipcRenderer.on('window-focused', () => {
-            console.log('%c✨ アプリにフォーカスされました: アップデートを確認中...', 'color: #00d1b2; font-weight: bold; font-size: 1.2em;');
-        });
-
-        // アップデート確認ログを受信
-        ipcRenderer.on('update-check-log', (event, localVersion, remoteVersion) => {
-            console.log(`🔎 Version Check: Local [${localVersion}] vs Remote [${remoteVersion}]`);
-        });
-
-        // メインプロセスからの汎用ログを受信
+        // メインプロセスからのログを表示
         ipcRenderer.on('log-message', (event, msg) => {
-            console.log(msg);
+            let style = 'color: #333;';
+            if (msg.includes('フォーカス')) style = 'color: #00d1b2; font-weight: bold;';
+            else if (msg.includes('最新バージョンです')) style = 'color: #10b981; font-weight: bold;';
+            else if (msg.includes('アップデートがあります')) style = 'color: #ef4444; font-weight: bold; font-size: 1.1em;';
+            else if (msg.includes('確認中')) style = 'color: #6366f1;';
+
+            console.log(`%c${msg}`, style);
         });
 
         // ピアリストの定期更新のみ残す
