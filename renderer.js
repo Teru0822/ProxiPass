@@ -77,15 +77,27 @@ const Utils = {
         for (const name of Object.keys(interfaces)) {
             for (const iface of interfaces[name]) {
                 if (iface.family === 'IPv4' && !iface.internal) {
-                    // Calculate broadcast address: using simple bitwise OR with inverse mask
-                    // Since JS bitwise operations are 32-bit signed integers, we process per octet
-                    const addr = iface.address.split('.').map(Number);
-                    const mask = iface.netmask.split('.').map(Number);
-                    const broadcast = addr.map((a, i) => (a | (~mask[i] & 255))).join('.');
-                    list.push(broadcast);
+                    // Calculate broadcast address
+                    try {
+                        let broadcast;
+                        if (iface.netmask) {
+                            const addr = iface.address.split('.').map(Number);
+                            const mask = iface.netmask.split('.').map(Number);
+                            broadcast = addr.map((a, i) => (a | (~mask[i] & 255))).join('.');
+                        } else {
+                            // Fallback: assume /24 network if netmask is missing
+                            const parts = iface.address.split('.');
+                            parts[3] = '255';
+                            broadcast = parts.join('.');
+                        }
+                        if (!list.includes(broadcast)) list.push(broadcast);
+                    } catch (e) {
+                        console.warn('Calculating broadcast failed:', e);
+                    }
                 }
             }
         }
+        console.log('🌐 Broadcast Targets:', list);
         return list;
     }
 };
@@ -130,10 +142,12 @@ class NetworkManager {
 
         this.broadcastSocket.on('listening', () => {
             this.broadcastSocket.setBroadcast(true);
-            console.log('✅ Broadcast Listener Ready:', CONFIG.PORTS.BROADCAST);
+            const address = this.broadcastSocket.address();
+            console.log(`✅ Broadcast Listener Ready: ${address.address}:${address.port}`);
         });
 
-        this.broadcastSocket.bind(CONFIG.PORTS.BROADCAST);
+        // Bind to all interfaces explicitly
+        this.broadcastSocket.bind(CONFIG.PORTS.BROADCAST, '0.0.0.0');
     }
 
     startBroadcasting() {
