@@ -673,6 +673,11 @@ class P2PApp {
             console.log(`🔎 Version Check: Local [${localVersion}] vs Remote [${remoteVersion}]`);
         });
 
+        // メインプロセスからの汎用ログを受信
+        ipcRenderer.on('log-message', (event, msg) => {
+            console.log(msg);
+        });
+
         // ピアリストの定期更新のみ残す
         setInterval(() => this.updatePeerListUI(), 1000);
 

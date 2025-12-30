@@ -148,12 +148,18 @@ let lastUpdateNotifiedVersion = null; // 通知済みのバージョンを記録
 async function checkUpdates() {
     if (!mainWindow) return;
 
-    // API制限保護: 前回のチェックから5秒未満ならスキップ (フォーカス連打対策)
+    // API制限保護: 前回のチェックから5秒未満ならスキップ
     const now = Date.now();
-    if (now - lastUpdateCheck < 5000) return;
+    if (now - lastUpdateCheck < 5000) {
+        // 頻繁なログ出力を避けるため、スキップ時はログを出さないか、デバッグ用として出す
+        // console.log('⏳ 短期間のためアップデート確認をスキップしました'); 
+        return;
+    }
     lastUpdateCheck = now;
 
-    // GitHub API (反映が早いため採用。ただし利用制限に注意)
+    if (mainWindow) mainWindow.webContents.send('log-message', '🔄 GitHub APIに接続してアップデートを確認しています...');
+
+    // GitHub API
     const options = {
         hostname: 'api.github.com',
         path: '/repos/Teru0822/ProxiPass/contents/package.json',
@@ -166,7 +172,9 @@ async function checkUpdates() {
 
     https.get(options, (res) => {
         if (res.statusCode !== 200) {
-            console.warn(`⚠️ アップデート確認失敗: Status ${res.statusCode} (API制限の可能性あり)`);
+            const msg = `⚠️ アップデート確認失敗: Status ${res.statusCode} (API制限の可能性あり)`;
+            console.warn(msg);
+            if (mainWindow) mainWindow.webContents.send('log-message', msg);
             return;
         }
 
@@ -175,35 +183,40 @@ async function checkUpdates() {
         res.on('end', () => {
             try {
                 const json = JSON.parse(data);
-                if (!json.content) return; // コンテンツがない場合
+                if (!json.content) return;
                 const content = Buffer.from(json.content, 'base64').toString();
                 const remotePkg = JSON.parse(content);
                 const remoteVersion = remotePkg.version;
 
-                // 物理ファイルから現在のバージョンを確実に読み取る
                 const currentPkgPath = path.join(app.effectiveAppPath || app.getAppPath(), 'package.json');
                 const localPkg = JSON.parse(fs.readFileSync(currentPkgPath, 'utf8'));
                 const currentVersion = localPkg.version;
 
-                console.log(`🔎 Version Check: Local [${currentVersion}] vs Remote [${remoteVersion}]`);
-                if (mainWindow) {
-                    mainWindow.webContents.send('update-check-log', currentVersion, remoteVersion);
-                }
+                const statusMsg = `🔎 Version Check: Local [${currentVersion}] vs Remote [${remoteVersion}]`;
+                console.log(statusMsg);
+                if (mainWindow) mainWindow.webContents.send('log-message', statusMsg);
 
                 if (remoteVersion !== currentVersion) {
-                    // まだ通知していない、または通知したバージョンと異なる場合のみ通知
                     if (lastUpdateNotifiedVersion !== remoteVersion) {
                         console.log(`🚀 新バージョン検出! 通知を送ります: ${remoteVersion}`);
                         lastUpdateNotifiedVersion = remoteVersion;
                         mainWindow.webContents.send('update-available', remoteVersion);
+                    } else {
+                        if (mainWindow) mainWindow.webContents.send('log-message', `ℹ️ バージョン ${remoteVersion} は通知済みです。`);
                     }
+                } else {
+                    if (mainWindow) mainWindow.webContents.send('log-message', '✅ 最新バージョンを使用しています。');
                 }
             } catch (e) {
-                console.error('❌ バージョンチェック中にエラー:', e.message);
+                const errMsg = `❌ バージョンチェック中にエラー: ${e.message}`;
+                console.error(errMsg);
+                if (mainWindow) mainWindow.webContents.send('log-message', errMsg);
             }
         });
     }).on('error', (err) => {
-        console.error('❌ GitHub API 通信エラー:', err.message);
+        const errMsg = `❌ GitHub API 通信エラー: ${err.message}`;
+        console.error(errMsg);
+        if (mainWindow) mainWindow.webContents.send('log-message', errMsg);
     });
 }
 
