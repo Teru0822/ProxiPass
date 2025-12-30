@@ -1,6 +1,6 @@
 {
   "name": "proxipass",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Proximetry Pass File and Message",
   "repository": {
     "type": "git",
@@ -55,6 +55,14 @@
         "deb"
       ],
       "category": "Network"
+    },
+    "mac": {
+      "icon": "assets/icon.png",
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg",
+        "zip"
+      ]
     }
   }
 }
