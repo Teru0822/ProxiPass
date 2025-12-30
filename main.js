@@ -13,16 +13,14 @@ const LOCAL_INDEX = path.join(UPDATE_DIR, 'index.html');
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 300,
-        height: 400,
-        minWidth: 300,
-        minHeight: 400,
-        maxWidth: 300,
-        maxHeight: 400,
+        width: 400,
+        height: 600,
+        minWidth: 350,
+        minHeight: 500,
         icon: path.join(__dirname, 'assets', 'icon.png'),
-        resizable: false,
-        maximizable: false,
-        fullscreenable: false,
+        resizable: true,
+        maximizable: true,
+        fullscreenable: true,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false

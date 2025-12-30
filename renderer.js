@@ -700,8 +700,13 @@ class P2PApp {
     }
 
     openNetworkInfoModal() {
+        console.log('ℹ️ Opening Network Info Modal');
         const bodyEl = document.getElementById('networkInfoBody');
-        if (!bodyEl) return console.error('Network Info Body Element not found');
+        if (!bodyEl) {
+            console.error('❌ Network Info Body Element not found');
+            alert('内部エラー: 情報表示用の要素が見つかりません。');
+            return;
+        }
 
         let infoHtml = `<div style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee;">
             <b>📱 アプリステータス:</b> <span style="color:#4ade80; font-weight:bold;">● 動作中 (v${CONFIG.VERSION})</span>
