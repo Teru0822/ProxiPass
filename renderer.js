@@ -463,7 +463,7 @@ class UIManager {
                     <div class="peer-info" style="position: relative;">
                         <div class="peer-avatar">💻</div>
                         <div>
-                            <div class="peer-name">${p.name}</div>
+                            <div class="peer-name">${p.name}<span class="action-indicator" data-ip="${p.ip}"></span></div>
                             <div class="peer-ip">${p.ip}</div>
                         </div>
                     </div>
@@ -486,45 +486,37 @@ class UIManager {
     // ... (omitted methods) ...
 
     playActionAnimation(type, targetIP) {
-        // Find target peer item
+        // Find target peer item and its action indicator
         const peerItem = document.querySelector(`.peer-item[data-ip="${targetIP}"]`);
+        const indicator = peerItem ? peerItem.querySelector('.action-indicator') : null;
 
-        // ローカル（自分）の場合やリストにない場合の処理
-        // 自分自身に送った場合（テストなど）のために、自分の表示があればそこに出すが、
-        // 現状自分の表示はないので、何もしないか、あるいは全体エフェクトだけ出すか。
-        // 基本的に相手からの受信を想定。
-
-        if (peerItem) {
-            const popup = document.createElement('div');
-            popup.className = `peer-action-popup ${type}`;
-
+        if (indicator) {
+            // Set text and show
             if (type === 'greet') {
-                popup.innerHTML = '<span>👋</span> よっ！';
+                indicator.textContent = '👋 よっ！';
             } else if (type === 'punch') {
-                popup.innerHTML = '<span>👊</span> ぼかっ！';
+                indicator.textContent = '👊 ぼかっ！';
                 // 画面揺れエフェクト（インパクト用）
                 document.body.classList.add('shake-screen');
                 setTimeout(() => document.body.classList.remove('shake-screen'), 500);
             }
 
-            // peer-item内、またはpeer-info内に追加
-            // peer-itemは relative ではないので、peer-info (relativeにした) に追加する方が位置合わせしやすいかも
-            // しかしCSSで .peer-action-popup { right: 40px; ... } と定義したので、peer-item (relativeが必要) に追加する。
+            indicator.classList.add('show');
 
-            // peer-item に position: relative を追加する必要があるが、CSSで定義済みか？
-            // 以前のCSSには .peer-item { ... position: relative; } があった。(Line 243)
-            peerItem.appendChild(popup);
-
-            // Cleanup
+            // Cleanup after 2 seconds
             setTimeout(() => {
-                if (popup.parentNode) popup.parentNode.removeChild(popup);
+                indicator.classList.remove('show');
+                setTimeout(() => {
+                    if (!indicator.classList.contains('show')) {
+                        indicator.textContent = '';
+                    }
+                }, 200); // Wait for fade out
             }, 2000);
 
             // 該当アイテムまでスクロール
             peerItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
             console.warn('Action received from unknown peer:', targetIP);
-            // リストにいない場合はトーストなどを出す手もあるが、今回はスキップ
         }
     }
 

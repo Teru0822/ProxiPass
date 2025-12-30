@@ -862,8 +862,18 @@ body {
     justify-content: center;
 }
 
-.update-banner-close:hover {
-    opacity: 0.7;
+.action-indicator {
+    display: inline-block;
+    font-size: 0.9rem;
+    margin-left: 6px;
+    font-weight: bold;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.action-indicator.show {
+    opacity: 1;
 }
 
 /* Action Buttons */
