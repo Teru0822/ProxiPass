@@ -641,6 +641,63 @@ class P2PApp {
         if (Notification.permission !== 'granted') {
             Notification.requestPermission();
         }
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    }
+
+    // --- UI Control Methods ---
+    saveName() {
+        const newName = this.ui.els.nameInput.value.trim();
+        if (newName) {
+            this.myName = newName;
+            this.ui.els.myName.textContent = this.myName;
+            localStorage.setItem('p2p_pc_name', this.myName);
+            this.network.updateName(this.myName);
+            this.ui.toggleModal('nameModal', false);
+        }
+    }
+
+    openNameModal() {
+        this.ui.els.nameInput.value = this.myName;
+        this.ui.toggleModal('nameModal', true);
+        setTimeout(() => this.ui.els.nameInput.focus(), 50);
+    }
+
+    closeNameModal() {
+        this.ui.toggleModal('nameModal', false);
+    }
+
+    openNetworkInfoModal() {
+        const bodyEl = document.getElementById('networkInfoBody');
+        if (!bodyEl) return console.error('Network Info Body Element not found');
+
+        let infoHtml = '<div style="margin-bottom:10px;"><b>ステータス:</b> <span style="color:#4ade80">● 動作中 (v' + CONFIG.VERSION + ')</span></div>';
+
+        infoHtml += '<div class="info-section"><b>📡 使用中のIPアドレス:</b><br>';
+        infoHtml += `<span style="font-family:monospace; margin-left:10px; font-weight:bold;">${this.myIP}</span></div>`;
+
+        infoHtml += '<div class="info-section"><b>📢 ブロードキャスト送信先:</b><br>';
+        const broadcasts = Utils.getBroadcastAddresses();
+        if (broadcasts.length > 0) {
+            broadcasts.forEach(addr => {
+                infoHtml += `<span style="font-family:monospace; margin-left:10px;">- ${addr}</span><br>`;
+            });
+            infoHtml += `<span style="font-family:monospace; margin-left:10px;">- 255.255.255.255 (Global)</span></div>`;
+        } else {
+            infoHtml += '<span style="color:orange; margin-left:10px;">※ ローカルIPが見つかりません</span></div>';
+        }
+
+        infoHtml += '<div class="info-section"><b>🔌 ポート状態:</b><br>';
+        infoHtml += `<span style="font-family:monospace; margin-left:10px;">UDP (検出): ${CONFIG.PORTS.BROADCAST} [Open]</span><br>`;
+        infoHtml += `<span style="font-family:monospace; margin-left:10px;">TCP (転送): ${CONFIG.PORTS.TRANSFER} [Listening]</span></div>`;
+
+        bodyEl.innerHTML = infoHtml;
+        this.ui.toggleModal('networkInfoModal', true);
+    }
+
+    closeNetworkInfoModal() {
+        this.ui.toggleModal('networkInfoModal', false);
     }
 
     exposeGlobals() {
