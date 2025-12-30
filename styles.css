@@ -719,7 +719,7 @@ body {
 
 /* History Styles */
 .history-list {
-    max-height: 80px;
+    max-height: 160px;
     overflow-y: auto;
     background: #f8fafc;
     border-radius: 8px;
