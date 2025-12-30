@@ -597,7 +597,7 @@ class P2PApp {
         // Initial UI State
         this.ui.els.myName.textContent = this.myName;
         this.ui.els.appVersion.textContent = `v${CONFIG.VERSION}`;
-        this.ui.els.statusText.textContent = `待機中 (${this.myIP})`;
+        // this.ui.els.statusText.textContent = `待機中 (${this.myIP})`;
         this.history.render(); // Render initial history
 
         // Start Network

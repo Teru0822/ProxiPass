@@ -144,7 +144,7 @@ async function checkUpdates() {
         hostname: 'api.github.com',
         path: '/repos/Teru0822/ProxiPass/contents/package.json',
         headers: {
-            'User-Agent': 'P2P-File-Share-App',
+            'User-Agent': 'ProxiPass-App',
             'Accept': 'application/vnd.github.v3+json',
             'Cache-Control': 'no-cache'
         }
