@@ -186,6 +186,9 @@ async function checkUpdates() {
                 const currentVersion = localPkg.version;
 
                 console.log(`🔎 Version Check: Local [${currentVersion}] vs Remote [${remoteVersion}]`);
+                if (mainWindow) {
+                    mainWindow.webContents.send('update-check-log', currentVersion, remoteVersion);
+                }
 
                 if (remoteVersion !== currentVersion) {
                     // まだ通知していない、または通知したバージョンと異なる場合のみ通知

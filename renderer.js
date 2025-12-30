@@ -134,7 +134,7 @@ const Utils = {
             }
         }
         const finalArray = Array.from(list);
-        console.log('🌐 Broadcast Targets (192.x only):', finalArray);
+        // console.log('🌐 Broadcast Targets (192.x only):', finalArray); // Reduced logging
         return finalArray;
     }
 };
@@ -666,6 +666,11 @@ class P2PApp {
         // フォーカス通知を受信
         ipcRenderer.on('window-focused', () => {
             console.log('%c✨ アプリにフォーカスされました: アップデートを確認中...', 'color: #00d1b2; font-weight: bold; font-size: 1.2em;');
+        });
+
+        // アップデート確認ログを受信
+        ipcRenderer.on('update-check-log', (event, localVersion, remoteVersion) => {
+            console.log(`🔎 Version Check: Local [${localVersion}] vs Remote [${remoteVersion}]`);
         });
 
         // ピアリストの定期更新のみ残す
