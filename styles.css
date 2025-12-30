@@ -209,7 +209,7 @@ body {
 }
 
 #peerList {
-    max-height: 100px;
+    max-height: 200px;
     overflow-y: auto;
     padding-right: 5px;
     /* スクロールバーの見た目を少し良くする（Webkit系） */
