@@ -242,10 +242,14 @@ class NetworkManager {
                         }
 
                         if (fileInfo.type === 'action') {
-                            isMessage = true; // Treat as message-like (no file body)
+                            isMessage = true;
                             expectedSize = 0;
                             if (this.callbacks.onActionReceived) {
-                                this.callbacks.onActionReceived(fileInfo.actionType, fileInfo.from);
+                                let senderIP = socket.remoteAddress || '';
+                                if (senderIP.startsWith('::ffff:')) {
+                                    senderIP = senderIP.replace('::ffff:', '');
+                                }
+                                this.callbacks.onActionReceived(fileInfo.actionType, fileInfo.from, senderIP);
                             }
                             socket.end();
                             return;
@@ -449,14 +453,14 @@ class UIManager {
             `;
         } else {
             this.els.peerList.innerHTML = peers.map(p => `
-                <div class="peer-item" id="peer-${p.ip.replace(/\./g, '-')}"
+                <div class="peer-item" data-ip="${p.ip}" id="peer-${p.ip.replace(/\./g, '-')}"
                      ondragover="app.handleDragOver(event, '${p.ip}')"
                      ondragleave="app.handleDragLeave(event, '${p.ip}')"
                      ondrop="app.handleDrop(event, '${p.ip}')">
                     <input type="checkbox" class="peer-checkbox" 
                            ${selectedPeerIPs.has(p.ip) ? 'checked' : ''}
                            onchange="app.togglePeer('${p.ip}')">
-                    <div class="peer-info">
+                    <div class="peer-info" style="position: relative;">
                         <div class="peer-avatar">💻</div>
                         <div>
                             <div class="peer-name">${p.name}</div>
@@ -476,6 +480,51 @@ class UIManager {
             this.els.selectedCount.textContent = `${count}人`;
         } else {
             this.els.sendBar.classList.remove('show');
+        }
+    }
+
+    // ... (omitted methods) ...
+
+    playActionAnimation(type, targetIP) {
+        // Find target peer item
+        const peerItem = document.querySelector(`.peer-item[data-ip="${targetIP}"]`);
+
+        // ローカル（自分）の場合やリストにない場合の処理
+        // 自分自身に送った場合（テストなど）のために、自分の表示があればそこに出すが、
+        // 現状自分の表示はないので、何もしないか、あるいは全体エフェクトだけ出すか。
+        // 基本的に相手からの受信を想定。
+
+        if (peerItem) {
+            const popup = document.createElement('div');
+            popup.className = `peer-action-popup ${type}`;
+
+            if (type === 'greet') {
+                popup.innerHTML = '<span>👋</span> よっ！';
+            } else if (type === 'punch') {
+                popup.innerHTML = '<span>👊</span> ぼかっ！';
+                // 画面揺れエフェクト（インパクト用）
+                document.body.classList.add('shake-screen');
+                setTimeout(() => document.body.classList.remove('shake-screen'), 500);
+            }
+
+            // peer-item内、またはpeer-info内に追加
+            // peer-itemは relative ではないので、peer-info (relativeにした) に追加する方が位置合わせしやすいかも
+            // しかしCSSで .peer-action-popup { right: 40px; ... } と定義したので、peer-item (relativeが必要) に追加する。
+
+            // peer-item に position: relative を追加する必要があるが、CSSで定義済みか？
+            // 以前のCSSには .peer-item { ... position: relative; } があった。(Line 243)
+            peerItem.appendChild(popup);
+
+            // Cleanup
+            setTimeout(() => {
+                if (popup.parentNode) popup.parentNode.removeChild(popup);
+            }, 2000);
+
+            // 該当アイテムまでスクロール
+            peerItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            console.warn('Action received from unknown peer:', targetIP);
+            // リストにいない場合はトーストなどを出す手もあるが、今回はスキップ
         }
     }
 
@@ -649,10 +698,10 @@ class P2PApp {
         this.history = new HistoryManager(); // Init History
         this.network = new NetworkManager({
             onPeerDiscovered: (name, ip) => this.handlePeerDiscovered(name, ip),
-            onActionReceived: (type, from) => {
-                console.log(`Action received: ${type} from ${from}`);
-                this.ui.playActionAnimation(type);
-                Utils.playNotificationSound(); // Optional: sound effect
+            onActionReceived: (type, fromName, fromIP) => {
+                console.log(`Action received: ${type} from ${fromName} (${fromIP})`);
+                this.ui.playActionAnimation(type, fromIP);
+                Utils.playNotificationSound();
             },
             onMessageReceived: (fileInfo) => this.handleMessageReceived(fileInfo),
             onTransferStart: (name, size) => this.ui.showProgress('📥 受信中...', name, size),
@@ -690,14 +739,16 @@ class P2PApp {
     sendAction(type) {
         if (!this.currentSendTarget) return;
 
-        this.network.sendAction(this.currentSendTarget.ip, type)
+        const targetIP = this.currentSendTarget.ip;
+
+        this.network.sendAction(targetIP, type)
             .then(() => {
                 console.log('Action sent:', type);
             })
             .catch(err => console.error('Failed to send action:', err));
 
-        // Play locally immediately
-        this.ui.playActionAnimation(type);
+        // Play locally (show on target's item)
+        this.ui.playActionAnimation(type, targetIP);
         this.ui.toggleModal('sendModal', false); // Close modal
     }
 

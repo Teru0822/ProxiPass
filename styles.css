@@ -900,50 +900,54 @@ body {
     transform: scale(0.95);
 }
 
-/* Action Overlay for Animations */
-.action-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    /* クリックを透過 */
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-
-/* Animation Elements */
-.action-text {
-    font-size: 5rem;
+/* Peer Item Action Popup */
+.peer-action-popup {
+    position: absolute;
+    right: 40px;
+    /* Checkbox(20px) + marginなどを考慮して右側に配置 */
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    background: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
     font-weight: bold;
-    color: white;
-    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    opacity: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    animation: popupBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
 }
 
-/* Animations */
-@keyframes popUp {
+.peer-action-popup.greet {
+    color: #059669;
+    border: 1px solid #10b981;
+    background: #ecfdf5;
+}
+
+.peer-action-popup.punch {
+    color: #dc2626;
+    border: 1px solid #ef4444;
+    background: #fef2f2;
+}
+
+@keyframes popupBounce {
     0% {
-        transform: scale(0);
+        transform: translateY(-50%) scale(0);
         opacity: 0;
     }
 
-    50% {
-        transform: scale(1.2);
+    80% {
+        transform: translateY(-50%) scale(1.1);
         opacity: 1;
     }
 
-    70% {
-        transform: scale(0.9);
-    }
-
     100% {
-        transform: scale(1);
-        opacity: 0;
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
     }
 }
 
@@ -991,41 +995,6 @@ body {
     100% {
         transform: translate(1px, -2px) rotate(-1deg);
     }
-}
-
-@keyframes punchEffect {
-    0% {
-        transform: scale(0.5);
-        opacity: 0;
-    }
-
-    20% {
-        transform: scale(1.5);
-        opacity: 1;
-    }
-
-    40% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-
-    100% {
-        transform: scale(2);
-        opacity: 0;
-    }
-}
-
-/* Specific Animation Classes applied via JS */
-.anim-greet .action-text {
-    animation: popUp 1.5s ease-out forwards;
-    color: #4ade80;
-    /* Green */
-}
-
-.anim-punch .action-text {
-    animation: punchEffect 0.8s ease-out forwards;
-    color: #ef4444;
-    /* Red */
 }
 
 .shake-screen {
