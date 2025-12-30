@@ -1,7 +1,7 @@
 {
   "name": "proxipass",
-  "version": "0.0.18",
-  "description": "P2P File Sharing Application",
+  "version": "0.0.19",
+  "description": "Proximetry Pass File and Message",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Teru0822/ProxiPass.git"
