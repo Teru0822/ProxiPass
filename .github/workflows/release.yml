@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout Code
@@ -49,6 +49,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build Mac
+        if: matrix.os == 'macos-latest'
+        run: npm run build -- --mac -p never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
@@ -58,5 +64,7 @@ jobs:
             dist/*.exe
             dist/*.AppImage
             dist/*.deb
+            dist/*.dmg
+            dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
