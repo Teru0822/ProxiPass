@@ -601,6 +601,29 @@ body {
     margin-left: 10px;
 }
 
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 5px;
+    margin-left: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.icon-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.info-section {
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid #e9ecef;
+}
+
 .file-remove-btn:hover {
     background: #dc2626;
 }

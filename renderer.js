@@ -352,7 +352,7 @@ class UIManager {
             'sendModal', 'sendModalTitle', 'messageInput', 'fileAttachSection',
             'fileAttachPlaceholder', 'attachedFileList', 'receivedModal',
             'receivedFrom', 'receivedMessageBody', 'receivedFiles',
-            'updateModal', 'updateModalBody', 'appVersion'
+            'updateModal', 'updateModalBody', 'appVersion', 'networkInfoBody'
         ];
         ids.forEach(id => this.els[id] = document.getElementById(id));
 
