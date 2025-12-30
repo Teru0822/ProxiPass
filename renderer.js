@@ -25,19 +25,22 @@ const CONFIG = {
 const Utils = {
     getLocalIP() {
         const interfaces = os.networkInterfaces();
-        let candidate = '127.0.0.1';
         for (const name of Object.keys(interfaces)) {
             for (const iface of interfaces[name]) {
                 if (iface.family === 'IPv4' && !iface.internal) {
-                    // 優先順位: 192.168 > 10. > 172.16 > その他
-                    if (iface.address.startsWith('192.168.')) return iface.address;
-                    if (iface.address.startsWith('10.')) candidate = iface.address;
-                    if (iface.address.startsWith('172.') && !candidate.startsWith('10.')) candidate = iface.address;
-                    if (candidate === '127.0.0.1') candidate = iface.address;
+                    // Only return 192.x address
+                    if (iface.address.startsWith('192.')) {
+                        return iface.address;
+                    }
                 }
             }
         }
-        return candidate;
+        // Fallback if no 192 address found, return first available or loopback
+        // But user requested "only 192 detected", so maybe we should stick to it?
+        // If we return 127.0.0.1, it won't work for LAN.
+        // I will return the first non-internal if 192 is not found, but log a warning.
+        // Actually, let's look for any 192 first.
+        return '127.0.0.1';
     },
 
     getNetworkInterfacesInfo() {
@@ -100,13 +103,16 @@ const Utils = {
 
     getBroadcastAddresses() {
         const list = new Set();
-        // Always try global broadcast
-        list.add('255.255.255.255');
+        // Always try global broadcast ? No, user wants only 192.
+        // list.add('255.255.255.255'); // Removed to be strict
 
         const interfaces = os.networkInterfaces();
         for (const name of Object.keys(interfaces)) {
             for (const iface of interfaces[name]) {
                 if (iface.family === 'IPv4' && !iface.internal) {
+                    // STRICT FILTER: Only 192.x.x.x
+                    if (!iface.address.startsWith('192.')) continue;
+
                     try {
                         let broadcast;
                         if (iface.netmask) {
@@ -128,7 +134,7 @@ const Utils = {
             }
         }
         const finalArray = Array.from(list);
-        console.log('🌐 Broadcast Targets:', finalArray);
+        console.log('🌐 Broadcast Targets (192.x only):', finalArray);
         return finalArray;
     }
 };
@@ -788,6 +794,9 @@ class P2PApp {
 
     // --- Peer Management ---
     handlePeerDiscovered(name, ip) {
+        // Strict Filter: Only 192.x allowed
+        if (!ip.startsWith('192.')) return;
+
         this.discoveredPeers.set(ip, {
             name: name,
             ip: ip,

@@ -236,6 +236,11 @@ ipcMain.handle('download-update', async (event, url, fileName) => {
                     }
 
                     const filePath = path.join(UPDATE_DIR, fileName);
+                    const fileDir = path.dirname(filePath);
+                    if (!fs.existsSync(fileDir)) {
+                        fs.mkdirSync(fileDir, { recursive: true });
+                    }
+
                     fs.writeFileSync(filePath, buffer);
 
                     // アップデート後にパスを切り替え (再起動までの重複通知を防止)
