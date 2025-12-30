@@ -241,6 +241,16 @@ class NetworkManager {
                             return;
                         }
 
+                        if (fileInfo.type === 'action') {
+                            isMessage = true; // Treat as message-like (no file body)
+                            expectedSize = 0;
+                            if (this.callbacks.onActionReceived) {
+                                this.callbacks.onActionReceived(fileInfo.actionType, fileInfo.from);
+                            }
+                            socket.end();
+                            return;
+                        }
+
                         expectedSize = fileInfo.size;
                         receivedData = receivedData.slice(4 + headerSize);
                         this.callbacks.onTransferStart(fileInfo.name, fileInfo.size);
@@ -277,6 +287,30 @@ class NetworkManager {
         if (this.currentTransfer) {
             this.currentTransfer.cancelled = true;
         }
+    }
+
+    async sendAction(targetIP, actionType) {
+        return new Promise((resolve, reject) => {
+            const client = new net.Socket();
+            client.connect(CONFIG.PORTS.TRANSFER, targetIP, () => {
+                const metadata = {
+                    type: 'action',
+                    actionType: actionType,
+                    from: this.myName,
+                    timestamp: Date.now()
+                };
+                const headerBuffer = Buffer.from(JSON.stringify(metadata), 'utf8');
+                const headerSize = Buffer.alloc(4);
+                headerSize.writeUInt32BE(headerBuffer.length, 0);
+
+                client.write(headerSize);
+                client.write(headerBuffer, () => {
+                    setTimeout(() => client.end(), 100);
+                    resolve();
+                });
+            });
+            client.on('error', (err) => reject(err));
+        });
     }
 
     async sendMessageData(targetIP, text, filesData, targetName) {
@@ -508,6 +542,30 @@ class UIManager {
             }).join('');
         }
     }
+
+    playActionAnimation(type) {
+        const overlay = document.getElementById('actionOverlay');
+        const text = document.createElement('div');
+        text.className = 'action-text';
+
+        if (type === 'greet') {
+            text.textContent = '👋 よっ！';
+            overlay.classList.add('anim-greet');
+        } else if (type === 'punch') {
+            text.textContent = '👊 ぼかっ！';
+            overlay.classList.add('anim-punch');
+            document.body.classList.add('shake-screen');
+            setTimeout(() => document.body.classList.remove('shake-screen'), 500);
+        }
+
+        overlay.appendChild(text);
+
+        // Cleanup
+        setTimeout(() => {
+            overlay.innerHTML = ''; // Remove all children
+            overlay.className = 'action-overlay'; // Reset classes
+        }, 2000);
+    }
 }
 
 // --- History Manager Class ---
@@ -591,6 +649,11 @@ class P2PApp {
         this.history = new HistoryManager(); // Init History
         this.network = new NetworkManager({
             onPeerDiscovered: (name, ip) => this.handlePeerDiscovered(name, ip),
+            onActionReceived: (type, from) => {
+                console.log(`Action received: ${type} from ${from}`);
+                this.ui.playActionAnimation(type);
+                Utils.playNotificationSound(); // Optional: sound effect
+            },
             onMessageReceived: (fileInfo) => this.handleMessageReceived(fileInfo),
             onTransferStart: (name, size) => this.ui.showProgress('📥 受信中...', name, size),
             onTransferProgress: (current, total) => this.ui.updateProgressBar(current, total),
@@ -622,6 +685,20 @@ class P2PApp {
                 console.log('Transfer cancelled');
             }
         });
+    }
+
+    sendAction(type) {
+        if (!this.currentSendTarget) return;
+
+        this.network.sendAction(this.currentSendTarget.ip, type)
+            .then(() => {
+                console.log('Action sent:', type);
+            })
+            .catch(err => console.error('Failed to send action:', err));
+
+        // Play locally immediately
+        this.ui.playActionAnimation(type);
+        this.ui.toggleModal('sendModal', false); // Close modal
     }
 
     async init() {

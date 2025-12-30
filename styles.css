@@ -865,3 +865,169 @@ body {
 .update-banner-close:hover {
     opacity: 0.7;
 }
+
+/* Action Buttons */
+.action-buttons-container {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #fdf2f8;
+    /* Pinkish bg */
+    border-radius: 8px;
+    border: 1px dashed #ec4899;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+    background: white;
+    color: #333;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    background: #fff0f5;
+    border-color: #ec4899;
+}
+
+.action-btn:active {
+    transform: scale(0.95);
+}
+
+/* Action Overlay for Animations */
+.action-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* クリックを透過 */
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Animation Elements */
+.action-text {
+    font-size: 5rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+}
+
+/* Animations */
+@keyframes popUp {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    70% {
+        transform: scale(0.9);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+@keyframes shakeScreen {
+    0% {
+        transform: translate(1px, 1px) rotate(0deg);
+    }
+
+    10% {
+        transform: translate(-1px, -2px) rotate(-1deg);
+    }
+
+    20% {
+        transform: translate(-3px, 0px) rotate(1deg);
+    }
+
+    30% {
+        transform: translate(3px, 2px) rotate(0deg);
+    }
+
+    40% {
+        transform: translate(1px, -1px) rotate(1deg);
+    }
+
+    50% {
+        transform: translate(-1px, 2px) rotate(-1deg);
+    }
+
+    60% {
+        transform: translate(-3px, 1px) rotate(0deg);
+    }
+
+    70% {
+        transform: translate(3px, 1px) rotate(-1deg);
+    }
+
+    80% {
+        transform: translate(-1px, -1px) rotate(1deg);
+    }
+
+    90% {
+        transform: translate(1px, 2px) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(1px, -2px) rotate(-1deg);
+    }
+}
+
+@keyframes punchEffect {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    20% {
+        transform: scale(1.5);
+        opacity: 1;
+    }
+
+    40% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* Specific Animation Classes applied via JS */
+.anim-greet .action-text {
+    animation: popUp 1.5s ease-out forwards;
+    color: #4ade80;
+    /* Green */
+}
+
+.anim-punch .action-text {
+    animation: punchEffect 0.8s ease-out forwards;
+    color: #ef4444;
+    /* Red */
+}
+
+.shake-screen {
+    animation: shakeScreen 0.5s;
+}

@@ -87,6 +87,16 @@
             <div class="modal-header" id="sendModalTitle">メッセージ送信</div>
             <textarea id="messageInput" class="message-input" placeholder="メッセージを入力（任意）..."></textarea>
 
+            <div class="action-buttons-container">
+                <div style="font-size: 11px; color: #666; margin-bottom: 5px; font-weight: bold;">👋 アクションを送る (履歴に残りません)
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="action-btn" onclick="app.sendAction('greet')">👋 よっ！</button>
+                    <button class="action-btn" onclick="app.sendAction('punch')">👊 ぼかっ！</button>
+                </div>
+            </div>
+            <br>
+
             <div class="file-attach-section" id="fileAttachSection" ondragover="app.handleFileAttachDragOver(event)"
                 ondragleave="app.handleFileAttachDragLeave(event)" ondrop="app.handleFileAttachDrop(event)">
                 <div class="attach-buttons">
@@ -168,6 +178,8 @@
             <button class="modal-btn cancel" onclick="app.cancelScreenshot()">❌ キャンセル</button>
         </div>
     </div>
+
+    <div id="actionOverlay" class="action-overlay"></div>
 
     <script src="renderer.js"></script>
 </body>
