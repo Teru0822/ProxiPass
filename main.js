@@ -94,13 +94,28 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(() => {
-    if (process.platform === 'win32') {
-        app.setAppUserModelId('com.p2pfileshare.app');
-    }
-    createWindow();
-    createTray();
-});
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+        // 2つ目のインスタンスが起動されたとき、既存のウィンドウを表示する
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+        }
+    });
+
+    app.whenReady().then(() => {
+        if (process.platform === 'win32') {
+            app.setAppUserModelId('com.p2pfileshare.app');
+        }
+        createWindow();
+        createTray();
+    });
+}
 
 function createTray() {
     const iconPath = path.join(__dirname, 'assets', 'icon.png');
